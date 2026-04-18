@@ -1,0 +1,20 @@
+{
+  "name": "Solar System Animation",
+  "short_name": "Solar System",
+  "description": "A minimalist animated visualization of the solar system.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone"],
+  "orientation": "any",
+  "background_color": "#05070f",
+  "theme_color": "#05070f",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
