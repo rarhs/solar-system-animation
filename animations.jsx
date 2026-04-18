@@ -321,6 +321,7 @@ function Stage({
   const [playing, setPlaying] = React.useState(autoplay);
   const [hoverTime, setHoverTime] = React.useState(null);
   const [scale, setScale] = React.useState(1);
+  const [speed, setSpeed] = React.useState(1);
 
   const stageRef = React.useRef(null);
   const canvasRef = React.useRef(null);
@@ -362,10 +363,12 @@ function Stage({
       const dt = (ts - lastTsRef.current) / 1000;
       lastTsRef.current = ts;
       setTime((t) => {
-        let next = t + dt;
+        let next = t + dt * speed;
         if (next >= duration) {
           if (loop) next = next % duration;
           else { next = duration; setPlaying(false); }
+        } else if (next < 0) {
+          next = loop ? ((next % duration) + duration) % duration : 0;
         }
         return next;
       });
@@ -376,7 +379,7 @@ function Stage({
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
       lastTsRef.current = null;
     };
-  }, [playing, duration, loop]);
+  }, [playing, duration, loop, speed]);
 
   React.useEffect(() => {
     const onKey = (e) => {
@@ -445,10 +448,12 @@ function Stage({
         actualTime={time}
         duration={duration}
         playing={playing}
+        speed={speed}
         onPlayPause={() => setPlaying(p => !p)}
         onReset={() => { setTime(0); }}
         onSeek={(t) => setTime(t)}
         onHover={(t) => setHoverTime(t)}
+        onSpeedChange={setSpeed}
       />
     </div>
   );
@@ -456,7 +461,49 @@ function Stage({
 
 // ── Playback bar ────────────────────────────────────────────────────────────
 
-function PlaybackBar({ time, duration, playing, onPlayPause, onReset, onSeek, onHover }) {
+const SPEED_OPTIONS = [0.25, 0.5, 1, 2, 4];
+
+function SpeedControl({ speed, onChange }) {
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center',
+      gap: 2,
+      background: 'rgba(255,255,255,0.04)',
+      border: '1px solid rgba(255,255,255,0.1)',
+      borderRadius: 6,
+      padding: 2,
+    }}>
+      {SPEED_OPTIONS.map((s) => {
+        const active = Math.abs(s - speed) < 0.001;
+        return (
+          <button
+            key={s}
+            onClick={() => onChange(s)}
+            title={`Playback speed ${s}x`}
+            style={{
+              minWidth: 30,
+              height: 22,
+              padding: '0 6px',
+              background: active ? 'rgba(255,255,255,0.18)' : 'transparent',
+              border: 'none',
+              borderRadius: 4,
+              color: active ? '#f6f4ef' : 'rgba(246,244,239,0.6)',
+              fontFamily: 'JetBrains Mono, ui-monospace, SFMono-Regular, monospace',
+              fontSize: 11,
+              fontVariantNumeric: 'tabular-nums',
+              cursor: 'pointer',
+              transition: 'background 120ms, color 120ms',
+            }}
+          >
+            {s}x
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function PlaybackBar({ time, duration, playing, speed = 1, onPlayPause, onReset, onSeek, onHover, onSpeedChange }) {
   const trackRef = React.useRef(null);
   const [dragging, setDragging] = React.useState(false);
 
@@ -521,7 +568,7 @@ function PlaybackBar({ time, duration, playing, onPlayPause, onReset, onSeek, on
       background: 'rgba(20,20,20,0.92)',
       borderTop: '1px solid rgba(255,255,255,0.08)',
       width: '100%',
-      maxWidth: 680,
+      maxWidth: 860,
       alignSelf: 'center',
 
       borderRadius: 8,
@@ -603,6 +650,10 @@ function PlaybackBar({ time, duration, playing, onPlayPause, onReset, onSeek, on
       }}>
         {fmt(duration)}
       </div>
+
+      {onSpeedChange && (
+        <SpeedControl speed={speed} onChange={onSpeedChange} />
+      )}
     </div>
   );
 }
